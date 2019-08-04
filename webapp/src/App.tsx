@@ -2,8 +2,10 @@ import * as React from 'react';
 import { BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 import Layout from './Layout'
 import { Styles } from './Styles'
-import styled from 'styled-components'
 import { format } from 'date-fns'
+import { isEndOfMonth, getDiffInDays } from './Utils'
+import * as moment from 'moment'
+import { uniqBy } from 'lodash'
 
 const API = 'https://storage.googleapis.com/bulb-interview/meterReadingsReal.json';
 
@@ -31,22 +33,16 @@ type GraphData = Pick<Electricity, 'readingDate' | 'cumulative'>;
 interface MeterReadingsData {
   electricity: Electricity[];
   graphData: GraphData[];
+  fullMonthCheck: Electricity[];
 }
 
-const formatDate = (date: Date) => format(date, 'MM/DD/YYYY');
-
-const meterReadingsRows = (electricity: Electricity[]) => electricity.map(reading => (
-  <Styles.TableRow data-test="tablerow" key={String(reading.readingDate)}>
-    <Styles.TableCell data-test="date">{formatDate(reading.readingDate)}</Styles.TableCell>
-    <Styles.TableCell data-test="cumulative">{reading.cumulative}</Styles.TableCell>
-    <Styles.TableCell data-test="unit">{reading.unit}</Styles.TableCell>
-  </Styles.TableRow>
-));
+const formatDate = (date: Date) => format(date, 'DD/MM/YYYY');
 
 class App extends React.Component<{}> {
   readonly state: Readonly<MeterReadingsData> = {
     electricity: [],
-    graphData: []
+    graphData: [],
+    fullMonthCheck: []
   };
 
   componentDidMount() {
@@ -59,18 +55,56 @@ class App extends React.Component<{}> {
       .then(data => this.setState(data, () => this.energyUsageData()));
   }
 
+  getNextMonth = (array: Electricity[], index: number) => {
+    const nextIndex = (index + 1) % array.length
+    const nextMonth = array[nextIndex] !== undefined ? array[nextIndex] : array[index];
+    return nextMonth;
+  }
+
+  getPreviousMonth = (array: Electricity[], index: number) => {
+    const previousIndex = (index - 1) % array.length
+    const previousMonth = array[previousIndex] !== undefined ? array[previousIndex] : array[index];
+    return previousMonth;
+  }
+
+  getCompleteMonths = (current: Electricity, nextMonth: Electricity): Electricity[] => {
+    if (isEndOfMonth(current.readingDate)) {
+      const isValidMonth = getDiffInDays(moment(nextMonth.readingDate), moment(current.readingDate))
+      const minimumMonthDays = 28;
+      if (isValidMonth > minimumMonthDays) { //  Check whether a moment object is the end of the month, then take those who are and trying to find if they are a month next to each other
+        const acc = [];
+        const energyUsage = (nextMonth.cumulative - current.cumulative).toFixed(2);
+        return [...acc, { date: formatDate(current.readingDate), energyUsage }];
+      }
+    }
+  }
+
+  monthlyEstimate = (nextMonth: Electricity, previousMonth: Electricity, current: Electricity) => {
+    const monthUsage = nextMonth.cumulative - previousMonth.cumulative;
+    const periodInDays = getDiffInDays(moment(nextMonth.readingDate), moment(previousMonth.readingDate))
+    const averageDailyUsageCurrentMonth = monthUsage / periodInDays;
+    const getDaysInMonth = moment(current.readingDate).daysInMonth()
+    const monthlyEstimate = (getDaysInMonth * averageDailyUsageCurrentMonth).toFixed(2);
+    return monthlyEstimate;
+  }
+
   energyUsageData = () => {
     const { electricity } = this.state;
-    const graphData = electricity.reduce((all, item, index, arr) => {
-      if (index < (arr.length - 2)) {
-        const nextIndex = (index + 1) % arr.length;
-        const nextMonth = arr[nextIndex] !== undefined ? arr[nextIndex] : arr[index];
-        const currentMonth = item.cumulative;
-        const energyUsage = nextMonth.cumulative - currentMonth;
-        const energyUsageData = [...all, { date: formatDate(nextMonth.readingDate), energyUsage }];
-        return energyUsageData;
+    const graphData = electricity.reduce((all, current, index, arr) => {
+      const previousMonth = this.getPreviousMonth(arr, index);
+      const nextMonth = this.getNextMonth(arr, index);
+
+      const isStartMonth = moment(previousMonth.readingDate).isSame(current.readingDate)
+      const isEndMonth = moment(nextMonth.readingDate).isSame(current.readingDate)
+      if (!isStartMonth && !isEndMonth) {
+        const fullMonthsReading = this.getCompleteMonths(current, nextMonth)
+        const fullMonthCheck = fullMonthsReading !== undefined ? fullMonthsReading : [];
+
+        const readingList = [...all, ...fullMonthCheck, { date: formatDate(current.readingDate), energyUsage: this.monthlyEstimate(nextMonth, previousMonth, current) }]
+        const monthlyElectricityUsage = uniqBy(readingList, 'date')
+        return monthlyElectricityUsage;
       }
-      return all;
+      return all
     }, [])
     this.setState({ graphData });
   }
@@ -82,7 +116,7 @@ class App extends React.Component<{}> {
           (
             <>
               <Styles.DataContainer>
-                <Styles.Header>Energy Usage</Styles.Header>
+                <Styles.Header>Estimated monthly energy usage</Styles.Header>
                 <BarChart width={900} height={400} data={graphData}>
                   <XAxis dataKey="date" />
                   <YAxis dataKey="energyUsage" />
@@ -91,26 +125,10 @@ class App extends React.Component<{}> {
                   <Bar dataKey="energyUsage" fill="#03ad54" isAnimationActive={false} />
                 </BarChart>
               </Styles.DataContainer>
-
-              <Styles.DataContainer>
-                <Styles.Header>Meter Readings</Styles.Header>
-
-                <Styles.Table data-test="table">
-                  <tbody>
-                    <Styles.TableRow>
-                      <th>Date</th>
-                      <th>Reading</th>
-                      <th>Unit</th>
-                    </Styles.TableRow>
-                    {meterReadingsRows(electricity)}
-                  </tbody>
-                </Styles.Table>
-
-              </Styles.DataContainer>
             </>
           )
           : <Styles.SpinnerWrapper>
-            {Spinner()}
+            <Spinner />
           </Styles.SpinnerWrapper>
         }
       </Layout>
