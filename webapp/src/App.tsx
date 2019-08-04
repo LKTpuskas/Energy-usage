@@ -2,7 +2,6 @@ import * as React from 'react';
 import { BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 import Layout from './Layout'
 import { Styles } from './Styles'
-import styled from 'styled-components'
 import { format } from 'date-fns'
 
 const API = 'https://storage.googleapis.com/bulb-interview/meterReadingsReal.json';

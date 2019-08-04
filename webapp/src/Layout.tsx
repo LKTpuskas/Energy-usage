@@ -19,7 +19,6 @@ const GlobalStyle = createGlobalStyle`
 }
 `
 
-
 const Layout: React.FC = ({ children }) => {
   return (
     <React.Fragment>

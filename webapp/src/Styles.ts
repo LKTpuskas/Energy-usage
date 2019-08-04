@@ -1,5 +1,4 @@
-import * as React from 'react';
-import styled, { createGlobalStyle } from 'styled-components'
+import styled from 'styled-components'
 
 const DataContainer = styled.div`
 display: flex;
