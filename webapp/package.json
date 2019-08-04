@@ -14,7 +14,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@types/jest": "^24.0.11",
+    "@types/jest": "^24.0.16",
     "@types/react": "^16.8.7",
     "@types/react-dom": "^16.8.2",
     "@types/recharts": "^1.1.14",
@@ -31,9 +31,23 @@
     "webpack-dev-server": "^3.2.1"
   },
   "dependencies": {
+    "@types/enzyme": "^3.10.3",
+    "@types/enzyme-adapter-react-16": "^1.0.5",
+    "@types/lodash": "^4.14.136",
+    "@types/react-spinner": "^0.2.0",
+    "@types/semantic-ui": "^2.2.7",
+    "date-fns": "^1.30.1",
+    "enzyme": "^3.10.0",
+    "enzyme-adapter-react-16": "^1.14.0",
+    "jest-fetch-mock": "^2.1.2",
+    "moment": "^2.24.0",
     "react": "^16.8.3",
     "react-dom": "^16.8.3",
-    "recharts": "^1.5.0"
+    "react-spinners": "^0.5.13",
+    "react-test-renderer": "^16.8.6",
+    "recharts": "^1.5.0",
+    "semantic-ui-react": "^0.87.3",
+    "styled-components": "^4.3.2"
   },
   "prettier": {
     "singleQuote": true
