@@ -6,6 +6,11 @@
     "module": "commonjs",
     "resolveJsonModule": true,
     "moduleResolution": "node",
-    "sourceMap": true
+    "sourceMap": true,
+    "types": [
+      "jest",
+      "enzyme",
+      "enzyme-adapter-react-16"
+    ]
   }
 }
